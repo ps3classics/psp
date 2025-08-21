@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PSP Compatibility</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      color: white;
+      background: linear-gradient(-45deg, #002244, #004488, #001122, #003366);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    nav {
+      background: rgba(0,0,0,0.6);
+      padding: 15px;
+    }
+    nav a {
+      margin: 0 15px;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    .content {
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+    .progress-bar {
+      width: 100%;
+      max-width: 800px;
+      height: 40px;
+      display: flex;
+      border: 2px solid white;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 30px auto;
+    }
+    .progress-segment {
+      height: 100%;
+    }
+    canvas {
+      margin: 30px auto;
+      display: block;
+      max-width: 800px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    ul li { margin: 8px 0; }
+    .totals {
+      margin-top: 30px;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="faq.html">FAQ</a>
+    <a href="compatibility.html">Compatibility</a>
+    <a href="https://ps3classics.github.io/ps1">PS1</a>
+    <a href="https://ps3classics.github.io/psp">PSP</a>
+  </nav>
+
+  <div class="content">
+    <h1>PSP Compatibility Details</h1>
+    <p id="last-updated">Loading...</p>
+
+    <h2>Overall Compatibility Progress</h2>
+    <div id="progress-bar" class="progress-bar"></div>
+
+    <h2>Stacked Breakdown</h2>
+    <canvas id="stackedChart"></canvas>
+
+    <h2>Breakdown</h2>
+    <ul id="breakdown"></ul>
+
+    <div class="totals" id="totals"></div>
+  </div>
+
+  <script>
+    async function loadData() {
+      const response = await fetch("data.json");
+      const { stats, last_updated } = await response.json();
+
+      document.getElementById("last-updated").textContent =
+        "Last updated: " + last_updated;
+
+      const total = Object.values(stats).reduce((a, b) => a + b, 0);
+
+      const colors = {
+        "PSP Classic": "rgb(0, 136, 238)",
+        "Playable": "rgb(153, 221, 153)",
+        "Minor Issues": "rgb(238, 238, 136)",
+        "Major Issues": "rgb(238, 153, 51)",
+        "Unplayable": "rgb(238, 68, 68)",
+        "Untested": "rgb(187, 187, 187)"
+      };
+
+      // progress bar
+      const bar = document.getElementById("progress-bar");
+      bar.innerHTML = "";
+
+      // merge PSP Classic + Playable
+      const mergedStats = {
+        "Fully Compatible": stats["PSP Classic"] + stats["Playable"],
+        "Minor Issues": stats["Minor Issues"],
+        "Major Issues": stats["Major Issues"],
+        "Unplayable": stats["Unplayable"],
+        "Untested": stats["Untested"]
+      };
+
+      const mergedColors = {
+        "Fully Compatible": "rgb(153, 221, 153)", // green (Classic + Playable)
+        "Minor Issues": "rgb(238, 238, 136)",
+        "Major Issues": "rgb(238, 153, 51)",
+        "Unplayable": "rgb(238, 68, 68)",
+        "Untested": "rgb(187, 187, 187)"
+      };
+
+      for (const [key, value] of Object.entries(mergedStats)) {
+        const percent = (value / total) * 100;
+        const segment = document.createElement("div");
+        segment.className = "progress-segment";
+        segment.style.backgroundColor = mergedColors[key];
+        segment.style.width = percent + "%";
+        bar.appendChild(segment);
+      }
+
+      // stacked bar chart
+      const ctx = document.getElementById("stackedChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["Compatibility"],
+          datasets: Object.entries(stats).map(([key, value]) => ({
+            label: key,
+            data: [value],
+            backgroundColor: colors[key],
+            stack: "stack1"
+          }))
+        },
+        options: {
+          plugins: { legend: { labels: { color: "white" } } },
+          responsive: true,
+          scales: {
+            x: { stacked: true, ticks: { color: "white" } },
+            y: { stacked: true, ticks: { color: "white" } }
+          }
+        }
+      });
+
+      // breakdown list
+      const breakdownList = document.getElementById("breakdown");
+      breakdownList.innerHTML = "";
+      for (const [key, value] of Object.entries(stats)) {
+        const percent = ((value / total) * 100).toFixed(1);
+        const li = document.createElement("li");
+        li.textContent = `${key}: ${percent}% (${value} games)`;
+        breakdownList.appendChild(li);
+      }
+
+      // totals
+      const fullyCompatible = stats["PSP Classic"] + stats["Playable"];
+      const fullyPercent = ((fullyCompatible / total) * 100).toFixed(1);
+      document.getElementById("totals").innerHTML =
+        `<strong>Fully Compatible (PSP Classic + Playable):</strong> ${fullyPercent}% (${fullyCompatible} games out of ${total})`;
+    }
+    loadData();
+  </script>
+</body>
+</html>
