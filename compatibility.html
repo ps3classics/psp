@@ -98,86 +98,83 @@
     <div class="totals" id="totals"></div>
   </div>
 
-  <script>
-    async function loadData() {
-      const response = await fetch("data.json");
-      const { stats, last_updated } = await response.json();
+<script>
+  async function loadData() {
+    const response = await fetch("data.json");
+    const { stats, last_updated } = await response.json();
 
-      document.getElementById("last-updated").textContent =
-        "Last updated: " + last_updated;
+    document.getElementById("last-updated").textContent =
+      "Last updated: " + last_updated;
 
-      const total = Object.values(stats).reduce((a, b) => a + b, 0);
+    const total = Object.values(stats).reduce((a, b) => a + b, 0);
 
-      const colors = {
-        //"PSP Classic": "rgb(0, 136, 238)",
-        "Perfect": "rgb(153, 221, 153)",
-        "Playable": "rgb(238, 238, 136)",
-        "Major Issues": "rgb(238, 153, 51)",
-        "Unplayable": "rgb(238, 68, 68)",
-        "Untested": "rgb(187, 187, 187)"
-      };
+    // Updated color scheme
+    const colors = {
+      "Perfect": "rgb(91, 192, 222)",    // blue
+      "Playable": "rgb(153, 221, 153)",  // green
+      "Major Issues": "rgb(238, 153, 51)", // orange
+      "Unplayable": "rgb(238, 68, 68)",  // red
+      "Untested": "rgb(187, 187, 187)"   // gray
+    };
 
-      // progress bar
-      const bar = document.getElementById("progress-bar");
-      bar.innerHTML = "";
+    // Progress bar (with merged categories)
+    const bar = document.getElementById("progress-bar");
+    bar.innerHTML = "";
 
-      const mergedStats = {
-        "Perfect": stats["Playable"],
-        "Playable": stats["Minor Issues"],
-        "Major Issues": stats["Major Issues"],
-        "Unplayable": stats["Unplayable"],
-        "Untested": stats["Untested"]
-      };
-      
-      for (const [key, value] of Object.entries(mergedStats)) {
-        const percent = (value / total) * 100;
-        const segment = document.createElement("div");
-        segment.className = "progress-segment";
-        segment.style.backgroundColor = colors[key];
-        segment.style.width = percent + "%";
-        bar.appendChild(segment);
-      }
+    const mergedStats = {
+      "Perfect": stats["Playable"],
+      "Playable": stats["Minor Issues"],
+      "Major Issues": stats["Major Issues"],
+      "Unplayable": stats["Unplayable"],
+      "Untested": stats["Untested"]
+    };
 
-      // stacked bar chart
-      const ctx = document.getElementById("stackedChart").getContext("2d");
-      new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: ["Compatibility"],
-          datasets: Object.entries(stats).map(([key, value]) => ({
-            label: key,
-            data: [value],
-            backgroundColor: colors[key],
-            stack: "stack1"
-          }))
-        },
-        options: {
-          plugins: { legend: { labels: { color: "white" } } },
-          responsive: true,
-          scales: {
-            x: { stacked: true, ticks: { color: "white" } },
-            y: { stacked: true, ticks: { color: "white" } }
-          }
-        }
-      });
-
-      // breakdown list
-      const breakdownList = document.getElementById("breakdown");
-      breakdownList.innerHTML = "";
-      for (const [key, value] of Object.entries(stats)) {
-        const percent = ((value / total) * 100).toFixed(1);
-        const li = document.createElement("li");
-        li.textContent = `${key}: ${percent}% (${value} games)`;
-        breakdownList.appendChild(li);
-      }
-
-      // totals
-      //const fullyCompatible = stats["Playable"];
-      const fullyPercent = ((Playable / total) * 100).toFixed(1);
-      document.getElementById("totals").innerHTML =
-        `<strong>Fully Compatible (PSP Classic + Playable):</strong> ${fullyPercent}% (${Playable} games out of ${total})`;
+    for (const [key, value] of Object.entries(mergedStats)) {
+      const percent = (value / total) * 100;
+      const segment = document.createElement("div");
+      segment.className = "progress-segment";
+      segment.style.backgroundColor = colors[key];
+      segment.style.width = percent + "%";
+      bar.appendChild(segment);
     }
-    loadData();
-  </script>
+
+    const ctx = document.getElementById("stackedChart").getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Compatibility"],
+        datasets: Object.entries(mergedStats).map(([key, value]) => ({
+          label: key,
+          data: [value],
+          backgroundColor: colors[key],
+          stack: "stack1"
+        }))
+      },
+      options: {
+        plugins: { legend: { labels: { color: "white" } } },
+        responsive: true,
+        scales: {
+          x: { stacked: true, ticks: { color: "white" } },
+          y: { stacked: true, ticks: { color: "white" } }
+        }
+      }
+    });
+
+    const breakdownList = document.getElementById("breakdown");
+    breakdownList.innerHTML = "";
+    for (const [key, value] of Object.entries(mergedStats)) {
+      const percent = ((value / total) * 100).toFixed(1);
+      const li = document.createElement("li");
+      li.textContent = `${key}: ${percent}% (${value} games)`;
+      breakdownList.appendChild(li);
+    }
+
+    const fullyCompatible = mergedStats["Perfect"];
+    const fullyPercent = ((fullyCompatible / total) * 100).toFixed(1);
+    document.getElementById("totals").innerHTML =
+      `<strong>Fully Compatible (Perfect):</strong> ${fullyPercent}% (${fullyCompatible} games out of ${total})`;
+  }
+  loadData();
+</script>
 </body>
 </html>
